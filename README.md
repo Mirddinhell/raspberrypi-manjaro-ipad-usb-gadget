@@ -1,14 +1,8 @@
 # raspberrypi-manjaro-ipad-isb-gadget
 
 How to use Raspberry Pi 4 (Arch Linux ARM aarch64) as a USB gadget from iPad Pro
-iPad
-archLinux
-RaspberryPi
-iPadS
-Introduction
-The Raspberry Pi 4 can use the USB-C port as Ethernet, so when combined with an iPad Pro that has a USB-C port, you can power the Raspberry Pi from the iPad Pro with a single USB-C cable through that cable. You can make an SSH connection. This allows you to quickly fill in difficult parts of the iPad Pro alone (compiling Rust code, running Docker, testing something in a Linux environment) by simply inserting the Raspberry Pi 4 as an accessory. ..
 
-IMG_0353.jpeg
+The Raspberry Pi 4 can use the USB-C port as Ethernet, so when combined with an iPad Pro that has a USB-C port, you can power the Raspberry Pi from the iPad Pro with a single USB-C cable through that cable. You can make an SSH connection. This allows you to quickly fill in difficult parts of the iPad Pro alone (compiling Rust code, running Docker, testing something in a Linux environment) by simply inserting the Raspberry Pi 4 as an accessory.
 
 This article describes the procedure when using Arch Linux ARM (aarch64) as the OS of Raspberry Pi 4. If you are using Raspbian, you should be able to use the original article in the last reference.
 
@@ -24,7 +18,7 @@ Insert the SD card into your Mac beforehand.
 
 cd Downloads
 curl -LO https://file.hsxsix.com/other/archlinuxarm-aarch64-rpi.img
-diskutil list # ここで SD カードがどのディスク番号に割り当てられているかを確認する (今回は /dev/disk2 だった)
+diskutil list # here SD Check which disk number the card is assigned to (This time /dev/disk2 was)
 diskutil umountDisk /dev/disk2
 sudo dd if=archlinuxarm-aarch64-rpi.img of=/dev/rdisk2 bs=1m
 diskutil eject /dev/disk2
@@ -41,15 +35,15 @@ This expands the space of the root file system. After that, it will be restarted
 Wi-Fi settings
 First, set up Wi-Fi so that you can connect to the Internet.
 
-# このディスクイメージで用意されている wpa_supplicant 関連の設定を一旦リセット
+# Reset the wpa_supplicant related settings provided by this disk image.
 rm /boot/wpa_supplicant.conf
 rm /etc/wpa_supplicant/wpa_supplicant.conf
 systemctl stop wpa_supplicant
 systemctl disable wpa_supplicant
 
-# https://wiki.archlinux.org/index.php/WPA_supplicant#Connecting_with_wpa_cli に従って wpa_cli で設定
+# https://wiki.archlinux.org/index.php/WPA_supplicant#Connecting_with_wpa_cli Set with wpa_cli according to
 vi /etc/wpa_supplicant/wpa_supplicant-wlan0.conf
-# 以下を書く
+# Write the following
 # ctrl_interface=/run/wpa_supplicant
 # update_config=1
 wpa_supplicant -D -i wlan0 -c /etc/wpa_supplicant/wpa_supplicant-wlan0.conf
@@ -60,8 +54,8 @@ wpa_cli You can set it interactively as follows by executing.
 OK
 > add_network
 0
-> set_network 0 ssid "ここに SSID"
-> set_network 0 psk "ここに Wi-Fi のパスワード"
+> set_network 0 ssid "SSID"
+> set_network 0 psk "Password"
 > enable_network 0
 > save_config
 OK
@@ -81,32 +75,32 @@ Activate when you're done.
 systemctl start wpa_supplicant@wlan0
 systemctl enable wpa_supplicant@wlan0
 systemctl restart systemd-networkd
-ip a # wlan0 に IP アドレスが降ってきていることを確認する
+ip a # Make sure you have an IP address on wlan0
 Initial setting
 Since some settings specific to the disk image used this time have been made, we will return them to the normal state.
 
 vi /etc/pacman.d/mirrorlist
-# Geo-IP based mirror selection and load balancing のミラーサーバが一番上に来るように、それより上にある行を削除する
+# Geo-IP based mirror selection and load balancing Delete the rows above it so that the mirror server of
 vi /etc/pacman.conf
-# 末尾付近にある aur などは見にいく必要がないので削除
+# Delete aur near the end because you don't have to go to see it
 The following are general initial settings.
 
-pacman -Syyu # パッケージデータベースの同期とパッケージのアップグレード
-passwd # root ユーザのパスワード変更
+pacman -Syyu # Package database synchronization and package upgrade
+passwd # root Change user password
 pacman -S sudo
-hostnamectl set-hostname Raspberry-beetle # ホスト名の設定 (mDNS ではこのホスト名 + .local が使用されるので短めがおすすめです)
+hostnamectl set-hostname Raspberry-beetle # Hostname setting (mDNS uses this hostname + .local, so a shorter one is recommended)
 timedatectl set-timezone Asia/Tokyo
 visudo
-# wheel グループのユーザに sudo 権限を与えるために以下の行を有効化しておく
+# wheel Enable the following lines to give sudo privileges to users in the group
 # %wheel ALL=(ALL) ALL
 Created by general user
 I created a user named kebo, but read it as your favorite username and run it.
 
-useradd kebo # ユーザ作成
-passwd kebo # パスワード設定
-usermod -aG wheel kebo # wheel グループに所属させる (sudo 実行のため)
-mkdir /home/kebo # ホームディレクトリ作成
-chown kebo:kebo /home/kebo # ホームディレクトリの所有権変更
+useradd kebo # User created
+passwd kebo # Password setting
+usermod -aG wheel kebo # wheel Belong to a group (for sudo execution)
+mkdir /home/kebo # Home directory creation
+chown kebo:kebo /home/kebo # Home directory ownership change
 mDNS settings
 Use Avahi to enable mDNS. Doing this makes the procedure much easier as the host name + .local can be resolved when accessing the Raspberry Pi 4 from the iPad Pro via a USB-C cable.
 
@@ -130,10 +124,10 @@ This is the best part of this article. This will allow the iPad Pro and Raspberr
 
 echo "dtoverlay=dwc2" | sudo tee -a /boot/config.txt
 sudo vi /root/usb0.sh
-# https://gist.github.com/kkk669/0c7b044ad9d992a41ed02467bb0d2d71 の内容をコピペしてください
+# https://gist.github.com/kkk669/0c7b044ad9d992a41ed02467bb0d2d71 Please copy the contents of
 sudo chmod +x /root/usb0.sh
 sudo vi /etc/systemd/system/usb0.service
-# https://gist.github.com/kkk669/2ea06a0ca07b16d50e9f5e81e775f045 の内容をコピペしてください
+# https://gist.github.com/kkk669/2ea06a0ca07b16d50e9f5e81e775f045 Please copy the contents of
 sudo systemctl daemon-reload
 sudo systemctl enable usb0
 sudo reboot
@@ -173,7 +167,7 @@ sudo pacman -S systemd-swap
 sudo vi /etc/systemd/swap.conf
 # swapfc_enabled=1 に変更
 # swapfc_force_preallocated=1 に変更
-# zswap_enabled=0 に変更 (今回使用するカーネルではサポートされていないとエラー表示されるため)
+# zswap_enabled=0 Changed to (because an error is displayed if it is not supported by the kernel used this time)
 sudo systemctl start systemd-swap
 sudo systemctl enable systemd-swap
 After a while, you can confirm that the swap file has been created with the following command.
