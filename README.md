@@ -27,7 +27,7 @@ At this point, the Raspberry Pi 4 can only connect to the network by wire, so I 
 
 By default, the root user password is root, so log in with that.
 
-First , follow the steps that are written to be the first thing you must do at https://github.com/hsxsix/archlinuxarm-aarch64-rpi .
+First, follow the steps that are written to be the first thing you must do at https://github.com/hsxsix/archlinuxarm-aarch64-rpi.
 
 init_resize
 This expands the space of the root file system. After that, it will be restarted automatically, so you can continue working after the restart.
@@ -50,6 +50,7 @@ wpa_supplicant -D -i wlan0 -c /etc/wpa_supplicant/wpa_supplicant-wlan0.conf
 wpa_cli
 wpa_cli You can set it interactively as follows by executing.
 
+
 > scan
 OK
 > add_network
@@ -62,15 +63,19 @@ OK
 > quit
 When you are done, create a configuration file on the systemd-networkd side.
 
+
 vi /etc/systemd/network/25-wireless.network
 Write the contents of the file as follows. (See https://wiki.archlinux.org/index.php/Systemd-networkd#Wireless_adapter )
+
 
 [Match]
 Name=wlan0
 
 [Network]
 DHCP=ipv4
+
 Activate when you're done.
+
 
 systemctl start wpa_supplicant@wlan0
 systemctl enable wpa_supplicant@wlan0
@@ -79,11 +84,13 @@ ip a # Make sure you have an IP address on wlan0
 Initial setting
 Since some settings specific to the disk image used this time have been made, we will return them to the normal state.
 
+
 vi /etc/pacman.d/mirrorlist
 # Geo-IP based mirror selection and load balancing Delete the rows above it so that the mirror server of
 vi /etc/pacman.conf
 # Delete aur near the end because you don't have to go to see it
 The following are general initial settings.
+
 
 pacman -Syyu # Package database synchronization and package upgrade
 passwd # root Change user password
@@ -96,6 +103,7 @@ visudo
 Created by general user
 I created a user named kebo, but read it as your favorite username and run it.
 
+
 useradd kebo # User created
 passwd kebo # Password setting
 usermod -aG wheel kebo # wheel Belong to a group (for sudo execution)
@@ -104,23 +112,28 @@ chown kebo:kebo /home/kebo # Home directory ownership change
 mDNS settings
 Use Avahi to enable mDNS. Doing this makes the procedure much easier as the host name + .local can be resolved when accessing the Raspberry Pi 4 from the iPad Pro via a USB-C cable.
 
+
 pacman -S avahi
 systemctl start avahi-daemon
 systemctl enable avahi-daemon
 To check , open the iPad Pro's Blink Shell
+
 
 blink> ping Raspberry-beetle.local
 PING raspberry-beetle.local (192.168.86.46): 56 data bytes
 64 bytes from 192.168.86.46: icmp_seq=0 ttl=64 time=207.943 ms
 64 bytes from 192.168.86.46: icmp_seq=1 ttl=64 time=11.601 ms
 
+
 --- raspberry-beetle.local ping statistics ---
 3 packets transmitted, 2 packets received, 33.3% packet loss
 round-trip min/avg/max/stddev = 11.601/109.772/207.943/98.171 ms
 If a ping response is returned from "hostname + .local" like this, it is successful.
 
+
 Grow a USB network interface
 This is the best part of this article. This will allow the iPad Pro and Raspberry Pi 4 to communicate over Ethernet through a USB-C cable.
+
 
 echo "dtoverlay=dwc2" | sudo tee -a /boot/config.txt
 sudo vi /root/usb0.sh
@@ -132,6 +145,7 @@ sudo systemctl daemon-reload
 sudo systemctl enable usb0
 sudo reboot
 After restarting, usb0you can see that the number of network interfaces is increasing as shown below.
+
 
 $ ip a
 1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
@@ -152,16 +166,22 @@ $ ip a
     link/ether 00:dd:dc:eb:6d:a1 brd ff:ff:ff:ff:ff:ff
     inet6 fe80::35b2:6f4e:23a2:c0ff/64 scope link 
        valid_lft forever preferred_lft forever
+       
+       
 SSH connection test
 Connect your iPad Pro to your Raspberry Pi 4 with a USB-C to USB-C cable.
 
+
 Turn off Wi-Fi and Cellular communication on the iPad Pro from Blink Shell
+
 
 ssh kebo@Raspberry-beetle.local
 If you can SSH with something like that, you are successful.
 
+
 (Bonus) Swap file settings
 If you build various things with Raspberry Pi 4, it will be painful if there is no swap, so set the swap file. Here, systemd-swap is used to set it automatically.
+
 
 sudo pacman -S systemd-swap
 sudo vi /etc/systemd/swap.conf
